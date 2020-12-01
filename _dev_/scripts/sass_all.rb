@@ -20,3 +20,5 @@ MAIN_SCSS_PATH = File.join(SCSS_FOLDER, 'main.scss')
 
 data_compilation = { line_comments: false, style: :compressed }
 Sass.compile_file( MAIN_SASS_PATH, MAIN_CSS_PATH, data_compilation)
+
+puts "Tous les SASS ont été transformés. Recharger la page du navigateur."
