@@ -293,8 +293,6 @@ class Listing {
     if ( nombreLis == 0) erreur("Aucun item n'a été trouvé… Êtes-vous sûr d'avoir bien ajouté la class CSS `listing-item` au LI de chaque élément (dans la méthode d'instance `li` du propriétaire) ?")
     if ( nombreFiltred ) { this.setFilterOn(true) }
   }
-
-  }
   valuesFiltreOK(item, filtreValues){
     var res ;
     for(var [prop, value] of filtreValues){
