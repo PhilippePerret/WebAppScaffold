@@ -61,6 +61,7 @@ class UI {
       .then(ret => {
         // console.log("ret:", ret)
         if (ret.error) return ko(ret.error)
+        if ( 'string' == typeof container ) { container = document.querySelector(container) }
         container.insertAdjacentHTML('beforeend', ret.brique)
         ok(ret)
       })
