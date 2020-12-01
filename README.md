@@ -76,3 +76,7 @@ Pour le moment, elle doit être construite en dur. Par exemple, lorsqu'un script
 ## Librairie jQuery
 
 Par défaut, on a accès aux librairies jQuery (ui et min) pour ces applications rapides.
+
+## CSS / Sass
+
+On peut écrire les fichiers css en sass. Il suffit de jouer le script `_dev_/script/sass_all.rb` pour tout transformer dans `css/main_sass.css`.
