@@ -1,6 +1,12 @@
 /*
   Généraux
 */
+
+/* Pour ne pas pouvoir sélectionner des éléments dans l'interface */
+body *:not(input[type="text"]):not(textarea):not(input[type="password"]) {
+  -webkit-user-select: none;
+}
+
 fieldset legend, span.libelle {
   font-family:'Arial Narrow',Helvetica,Geneva;
   font-style: italic;
