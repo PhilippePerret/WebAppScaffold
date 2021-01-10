@@ -29,19 +29,31 @@ class Ajax {
     Return une Promise
   **/
   static send(script, hdata = {}){
-    Object.assign(hdata, {
-      script: script,
-      current_analyse: CURRENT_ANALYSE // Propre à l'application ScoreTagger
-    })
+    Object.assign(hdata, {script: script})
+    // Propre à ScoreTagger :
+    hdata.current_analyse || Object.assign(hdata, {current_analyse: CURRENT_ANALYSE})
     hdata = this.prepareData(hdata)
     // console.log("Data ajax : ", data)
     return this.proceedSending(hdata).then(this.traiteErrorInRetour.bind(this))
   }
 
+  // static proceedSending(hdata){
+  //   return new Promise((ok,ko)=>{
+  //     var data = {
+  //         url: 'ajax/ajax.rb'
+  //       , data: hdata
+  //       , success: ok
+  //       , error: this.onError.bind(this,ko)
+  //     }
+  //     $.ajax(data)
+  //   })
+  // }
+  //
   static proceedSending(hdata){
     return new Promise((ok,ko)=>{
       var data = {
           url: 'ajax/ajax.rb'
+        , type: 'post'
         , data: hdata
         , success: ok
         , error: this.onError.bind(this,ko)

@@ -1,8 +1,9 @@
 body {
   position:relative;
 }
+
 button {
-  cursor:pointer;
+  cursor: pointer;
 }
 
 input[type="checkbox"] + label {
@@ -27,7 +28,7 @@ input[type="checkbox"] + label {
 */
 div#messages-container {
   position:fixed;
-  bottom:40px;
+  bottom:0px;
   left:0;
   height:auto;
   z-index: 5000;
@@ -37,7 +38,6 @@ div#messages-container {
 div.message {
   color:white;
   padding:0.2em 1em;
-  border-radius:0.3em;
   z-index:2000;
 }
 .message:not(.error) {

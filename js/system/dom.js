@@ -40,11 +40,31 @@ function DCreate(tagName,attrs){
   for(var attr in attrs){
     var value = attrs[attr]
     switch (attr) {
-      case 'text': o.innerHTML = value; break;
-      case 'inner': o.appendChild(value); break;
-      case 'css': case 'class': o.className = value ; break;
-      default: o.setAttribute(attr, value)
+      case 'text':
+        o.innerHTML = value;
+        break;
+      case 'inner':
+        if ( !Array.isArray(value) ) value = [value]
+        value.forEach(obj => o.appendChild(obj))
+        break;
+      case 'css':
+      case 'class':
+        o.className = value;
+        break;
+      default:
+        o.setAttribute(attr, value)
     }
   }
   return o;
+}
+
+class DOM {
+  static showIf(domEl, condition){
+    domEl[condition ? 'removeClass' : 'addClass']('hidden')
+    return condition
+  }
+  constructor(domEl){
+    this.obj = domEl
+  }
+  showIf(condition){ return this.constructor.showIf(this.obj, condition)}
 }

@@ -1,21 +1,21 @@
 /*
   Généraux
 */
-
-/* Pour ne pas pouvoir sélectionner des éléments dans l'interface */
 body *:not(input[type="text"]):not(textarea):not(input[type="password"]) {
   -webkit-user-select: none;
+}
+
+span.libelle {
+  vertical-align: top;
+  margin-right: 0.5em;
 }
 
 fieldset legend, span.libelle {
   font-family:'Arial Narrow',Helvetica,Geneva;
   font-style: italic;
   color:#777777;
+  margin-left: 0;
 }
-
-span.libelle {display:inline-block;/* pour pouvoir donner une dimension */}
-span.libelle:after {content:' :'}
-span.libelle + span {margin-left:8px}
 
 .tools {
   text-align: right;

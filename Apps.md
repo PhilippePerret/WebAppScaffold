@@ -4,6 +4,6 @@ Pour pouvoir faire des actualisations, ce fichier contient la liste des applicat
 
 > Les plus récentes sont au-dessus.
 
+* ScoreTagger
 * HOME
 * Publishing
-
