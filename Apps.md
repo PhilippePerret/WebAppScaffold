@@ -4,6 +4,7 @@ Pour pouvoir faire des actualisations, ce fichier contient la liste des applicat
 
 > Les plus récentes sont au-dessus.
 
+* Analyses_Films_WAS
 * ScoreTagger
 * HOME
 * Publishing

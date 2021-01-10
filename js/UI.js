@@ -12,11 +12,7 @@ static insertHTMLElements(){
   return UI.insert('panneau-home','div#panneau-home')
   .then(UI.insert.bind(UI, 'form_data_analyse', 'div#form_data_analyse'))
   .then(UI.insert.bind(UI, 'form_infos_score_analyse', 'div#form_infos_score_analyse'))
-  .then(UI.insert.bind(UI, 'form_preferences', 'div#form_preferences'))
-  .then(UI.insert.bind(UI,'panneau-crop', 'div#panneau-crop'))
-  .then(UI.insert.bind(UI,'panneau-analyse', 'div#panneau-analyse'))
-  .then(UI.insert.bind(UI,'AObject_Toolbox', 'div#container-aobject-toolbox'))
-  .then(UI.insert.bind(UI,'panneau-export', 'div#panneau-export'))
+  // Insérer d'autres éléments ici
   .then(ASync_out("UI::insertHTMLElements"))
 }
 
@@ -27,14 +23,7 @@ static insertHTMLElements(){
 ***/
 static async setInterface(){
   __in("UI::setInterface")
-  const score = Score.current
-  DGet('button#btn-panneau-crop')   .disabled = !score
-  DGet('button#btn-panneau-analyse').disabled = !score
-  DGet('button#btn-panneau-export') .disabled = !score
-  const ShowAnalyse = score && score.preferences.binary('startup.analyse_on_startup')
-  const panneauName = ShowAnalyse ? 'analyse' : 'home'
-  __add("Il faut afficher le panneau " + panneauName)
-  await Panneau.show(panneauName)
+
   __out("UI::setInterface")
 }
 

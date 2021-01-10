@@ -30,8 +30,6 @@ class Ajax {
   **/
   static send(script, hdata = {}){
     Object.assign(hdata, {script: script})
-    // Propre à ScoreTagger :
-    hdata.current_analyse || Object.assign(hdata, {current_analyse: CURRENT_ANALYSE})
     hdata = this.prepareData(hdata)
     // console.log("Data ajax : ", data)
     return this.proceedSending(hdata).then(this.traiteErrorInRetour.bind(this))
