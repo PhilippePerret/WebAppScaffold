@@ -5,9 +5,9 @@
 def log message
   File.open('./log.txt','a'){|f| f.write "#{message}\n"}
 end
-
 log("--- [#{Time.now}] Entrée dans ajax.rb")
-
-require_relative 'ajax/required'
-require_relative 'config'
-Ajax.treate_request
+begin
+  require_relative 'ajax/required'
+  require_relative 'config'
+  Ajax.treate_request
+end

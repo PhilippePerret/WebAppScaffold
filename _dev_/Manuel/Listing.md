@@ -16,7 +16,7 @@ La class `Listing` est une classe permettant de gérer de façon très profonde 
 Pour pouvoir fonctionner, la classe `Listing` a besoin :
 
 * du module `Listing.js`,
-* du module CSS `Listing.css`,
+* du module CSS `Listing.css` (ou `_Listing.sass`),
 * d'un propriétaire conforme (cf. [conformité du propriétaire du listing](ownerconfirmite)),
 * une méthode générale `error(msg)` qui traite les messages d'erreur,
 * une méthode générale `message(msg)` qui traite les messages notice,
@@ -30,14 +30,39 @@ Pour pouvoir fonctionner, la classe `Listing` a besoin :
 class MaClasse {
 
   static get listing(){
-    return this._listing || ( this._listing = new Listing({
+    return this._listing || ( this._listing = new Listing(this, {
         titre: 'Le titre du listing'
       , id: '<identifiant du listing>'
       // Optionnel
-      , height: <Number Hauteur> // hauteur de la fenêtre
+      , container: <DOMElement> // le container, sinon, le body
+      													// Note : pas en String
+      , form_width: <Number>		// Largeur du formulaire (nombre de pixels)
+      , form_height: <Number>		// Hauteur du formulaire (en pixels)
+      , list_width: <Number>		// Largeur du listing (nombre de pixels)
+      , list_height: <Number>		// Hauteur du listing (en pixels)
+      , height: <Number Hauteur> // hauteur de la fenêtre (bande centrale, en fait)
       , top:    <Number> // décalage vertical
       , left:   <Number> // Décalage horizontal
-      , sortable: true/false  // Si true, la liste est "sortable"
+      , options: {
+      		// Note : dans les options ci-dessous, la première valeur
+      		// est la valeur par défaut.
+      		form_under_listing: false/true 
+      													// True pour mettre le formulaire sous
+      													// la liste. Régler les largeurs et hauteurs
+      													// en conséquence.
+  	    	sortable: true/false  // Si true, la liste est "sortable"
+					draggable: true/false // si false, le listing n'est pas déplaçable
+      		title: true/false			// Si false, pas de bande de titre
+      		no_id: false/true			// Si true, on n'affiche pas l'identifiant
+      		destroy_without_confirm: false/true // Si true, on n'a pas besoin de 
+      																				// confirmer les destructions 
+      																				// d'items
+	    }
+			// Par défaut la procédure normale est 1) on clique sur "+", 2) on 
+      // définit les valeurs et 3) on clique sur "Save". Si on veut adopter
+      // plutôt la procédure 1) On définit les valeurs, 2) on clique sur "+"
+      // pour créer l'item, alors on met la propriété 'createOnPlus' à true
+      , createOnPlus: true/false // défaut : false
       // Si la méthode propriétaire qui doit être appelée après une sélection
       // n'est pas onSelect, on peut la définir ici : (elle reçoit en premier
       // argument l'item sélectionné)
@@ -58,7 +83,11 @@ class MaClasse {
 
 ```
 
+> Note : bien noter que le premier paramètre de l’initialisation est le propriété (`this`).
 
+### Insertion du listing dans la page
+
+Dès qu'on instancie le listing — cf. ci-dessus —, la listing est affiché dans la page tel qu'il est défini par ses propriétés.
 
 ### Définir des boutons propres
 
@@ -94,12 +123,13 @@ On appelle « propriétaire du listing » la CLASSE quelconque du programme qu
 * définir une méthode de classe `get` qui reçoit en argument l'identifiant d'un item et retourne son instance,
 * définir la méthode de classe `create` pour la création d'un nouvel item (la méthode doit recevoir les valeurs, dont `id` qui vaudra `null`),
 * définir la méthode de classe `update` pour la modification de l'item (la méthode doit recevoir les valeurs, dont `id` qui possède la valeur de l'identifiant)
+* définir la propriété de classe `tableName` qui doit retourner le nom de la table SI le listing travaille avec une base de données.
 
 Les instances doivent :
 
-* définir la méthode `li` qui retournera la balise `LI` à afficher dans le listing,
+* définir la PROPRIÉTÉ `li` (donc `get li()`) qui retournera la balise `LI` à afficher dans le listing,
 * ce `LI` doit contenir la classe `listing-item` (dans le cas contraire le filtrage ne sera pas possible — l'erreur sera signalée),
-* ce `LI` doit impérativement avec un attribut `id` constitué par `<type élément>-<id>` et le `<type-element>` ne doit comporter aucun tiret (moins) (par exemple `projet-12`),
+* ce `LI` doit **impérativement** avoir un attribut `id` constitué par `<type élément>-<id>` et le `<type-element>` ne doit comporter aucun tiret (moins) (par exemple `projet-12`),
 * définir la propriété `id` qui devra retourner l'identifiant de l'item
 
 
@@ -142,7 +172,14 @@ vtype       Type de la valeur. Par défaut, c'est string.      number
             Peut être :
                 'number'    Transforme la valeur en nombre
                 'string'    Par défaut, en string
+                'bool'			Pour les checkbox
 
+options			Permet de définir plus précisément le champ :
+						inline:				Si true, est mis dans un span. Cela permet
+													de regrouper sur une même ligne plusieurs
+													champs courts.
+						field_width		Le width exact, AVEC L'UNITÉ, du champ.
+						
 required    Si cet attribut est true, la donnée ne peut être
             vide (donc null).
 
@@ -154,46 +191,24 @@ min         Longueur minimale de la donnée (ou nombre min)
             Ne pas oublier de mettre le vtype à 'number'
             pour que la valeur soit étudiée comme un nombre
 
-default     Valeur par défaut de la propriété.                Philippe
+default     Valeur par défaut de la propriété.                
             Pour un type=checkbox, c'est true/false
 
-form        Si la propriété ne se définit pas par un champ
-            simple, on peut définir ici le NOM de la fonction
-            qui doit servir à construire le champ. Par exem-
-            ple, imaginons des sociétés qui traitent diffé-
-            rente matière (bois, métal, papier, etc.). La
-            propriété 'matieres' est définie par :
-            {
-                name:'matieres'
-              , hname:null
-              , type: 'hidden'
-              , form:'buildCbMatieres'
-              , setter:'setMatieresValue'
-              , getter:'getMatieresValue'
-            }
-            Listing produira alors une rangée avec un champ
-            caché pour mettre la valeur finale de 'matieres'
-            et la méthode 'buildCbMatieres' du propriétaire
-            construira la liste des checkbox à cocher.
-            Cette méthode 'buildCbMatieres' reçoit en premier
-            argument le div.row contenant déjà le champ défi-
-            ni dans PROPERTIES.
-            Les méthodes 'setter' et 'getter' permettent res-
-            pectivement de définir et de récupérer les valeurs
-            de la propriété 'matieres'.
+form        cf. ci-dessous "Utilisation de form"
 
 setter      Pour définir les valeurs d'un champ complexe
-            cf. 'form' ci-dessus
+            (p.e. le 'form' ci-dessus, mais pas seulement)
             Le setter reçoit la valeur de la propriété et doit
             se débrouiller avec en fonction de ce qu'elle est
             et de la construction des champs de formulaire. Par
             exemple, si on a affaire aux matières ci-dessus et
             que la valeur ressemble à "0011001" avec 1 utilisé
-            lorsqu'une matière est choisie. Donc les matières
-            3, 4 et 7 seront sélectionnée.
+            lorsqu'une matière est choisie. Donc la méthode setter
+            devra sélectionner les matières 3, 4 et 7.
+            Peut être utilisé par exemple si la valeur se trouve 
+            autre part dans l'interface.
 
 getter      Pour récupérer les valeurs d'un champ complexe
-            cf. 'form' ci-dessus
             La méthode de getter reçoit le div contenant les
             élément de formulaire construits avec la méthode
             définie par 'form'.
@@ -202,21 +217,154 @@ getter      Pour récupérer les valeurs d'un champ complexe
 
 ```
 
+
+
+##### Utilisation de `form`
+
+Si la propriété ne se définit pas par un champ simple, on peut définir ici le NOM de la fonction qui doit servir à construire le champ. Par exemple, imaginons des sociétés qui traitent différente matière (bois, métal, papier, etc.). La propriété 'matieres' est définie par :
+
+~~~javascript
+{
+		name:'matieres'
+  , hname:null
+  , type: 'hidden'
+  , form:'buildCbMatieres'
+  , setter:'setMatieresValue'
+  , getter:'getMatieresValue'
+ }
+
+~~~
+
+Listing produira alors une rangée avec un champ caché pour mettre la valeur finale de 'matieres' et la méthode de classe 'buildCbMatieres' du owner construira la liste des checkbox à cocher.
+
+Cette méthode de classe 'buildCbMatieres' reçoit en premier argument le div.row contenant déjà le champ défini dans PROPERTIES. 
+
+Les méthodes 'setter' et 'getter' permettent respectivement de définir et de récupérer les valeurs de la propriété 'matieres'.
+
+**Requis absolument** :
+
+* La méthode qui produit le champ (`buildCbMatieres` pour l’exemple) doit être placé dans un div de classe `row-<type>` (donc `row-matieres` pour l’exemple) et ce div doit contenir un champ pour l’erreur. S’il y a un label, on ajoute un DOMElement label :
+
+  ~~~javascript
+  DCreate('DIV', {class: "row-<property>", inner: [
+    	 DCreate('LABEL', {text: "<nom humain>"})
+     , DCreate(/* champ du formulaire */)
+    , DCreate('DIV', {class:'error-message'})
+  ]})
+  ~~~
+
+  
+
+* Le champ de formulaire doit avoir un ID de `item-<propriété>` (`item-matieres` pour l’exemple).
+
+
+
+---
+
+## Extension de Listing
+
+
+
+On peut étendre les classes qui utilisent le listing avec la classe `ListingExtended` qui ajoute les méthodes suivantes :
+
+~~~javascript
+class maClasseAvecListing extends ListingExtended {
+  
+  // --- À DÉFINIR ---
+  static get loadScript(){ return 'mon_script_chargement_items.rb'}
+  static get saveItemScript(){ return 'script_save_item.rb'}
+  
+  static sortMethod(a,b){ ... } // Méthode de classement des items
+  							// NOTER que c'est la présence de cette méthode qui
+  							// détermine par convention que la liste des items doit
+  							// être classée
+  
+  // --- PROPRIÉTÉS AJOUTÉES ---
+  
+  orderedList		// Liste des items classés (selon la méthode 'sortMethod')
+  							// Note : dans cette liste, chaque item possède une nouvelle
+  							// propriété 'index' qui permet de connaitre sa position 
+  							// dans la liste.
+  
+  // --- MÉTHODES AJOUTÉES ---
+  
+  load()		// charge tous les items. Le module this.loadScript doit retourner
+  					// la propriété `items` avec la liste Array de tous les items
+
+  newId() 		// Renvoie un nouvel id
+  create()		// crée un nouvel item à partir des données du listing
+  update()		// actualise l'item à partir des données du listing
+  onDestroy()	// peut détruire l'item (la propriété destroyItemScript doit être
+  						// définie). Sinon, il faut surclasser cette méthode pour qu'elle
+  						// ne fasse rien.
+  selectFirst()			// Sélectionne (et édite) le premier item
+  selectNext()			// Sélectionne (et édite) l'item suivant
+  selectPrevious()	// Sélectionne (et édite) l'item précédent s'il existe
+  selectLast()			// Sélectionne (et édite) le dernier item
+  
+  
+  constructor(data){
+    super(data) // <============ ne pas oublier
+  }
+  
+  // --- Méthodes d'instance ajoutées ---
+  save()	// sauve l'item avec le script <class>.saveItemScript à qui
+  				// on envoie {data: this.data}
+  dispatchData(data)		// pour dispatcher les données
+  update(data)	// pour actualiser les données, rafraichir l'affichage et 
+  							// les sauver
+}
+~~~
+
+
+
+---
+
+## Méthodes optionnelles
+
+
+
+**`static <owner>.onDestroy(item)`**
+
+Méthode appelée (si elle existe) à la destruction d’un item. Si cette méthode n’existe pas, l’élément sera simplement détruit de la liste.
+
+
+
+**`<owner>::afterCreate(item)`**
+
+Méthode appelée après la création de l’item `item` si elle existe dans le propriétaire du listing.
+
+Permet par exemple de placer le `LI` de l’item au bon endroit, en cas de classement autre que le classement naturel par ajout.
+
+
+
+---
+
+
+
 ## Méthodes utiles
 
-### `listing#deselectAll()`
+
+
+**`listing#deselectAll()`**
 
 Pour retirer toutes les sélections du listing.
 
-### `listing#displayedItems()`
+
+
+**`listing#displayedItems()`**
 
 Retourne la liste des instances (du propriétaire) qui sont affichés. Sert particulièrement lorsqu'on filtre la liste.
 
-### `Listing#selectedItems()` ou `Listing#getSelection()`
+
+
+**`Listing#selectedItems()` ou `Listing#getSelection()`**
 
 Retourne la liste des instances (du propriétaire) qui sont sélectionnées.
 
-### `Listing#setSelectionTo(...)`
+
+
+**`Listing#setSelectionTo(...)`**
 
 Met la sélection à la valeur envoyée ou aux valeurs envoyées en premier argument. Le second argument permet de définir des options.
 
@@ -253,7 +401,7 @@ keep: true        Garde la sélection actuelle
 
 ## Instances propriétaires
 
-Une « instance de propriétaire » désigne l'instance de la classe qui possède le listing.
+Une « instance de propriétaire » désigne l'instance qui possède le listing.
 
 Cette instance est soumise à certaines contraintes qu'on peut trouver dans la partie [Conformité du propriétaire du listing](#ownerconfirmite).
 
@@ -261,76 +409,158 @@ Dès qu'elles sont introduites dans le listing, on leur colle une nouvelle propr
 
 
 
-## Nouvelle méthodes/propriétés propriétaire (classe)
+## Nouvelle propriétés de classe
 
-### `<owner>.selectedOne`
+### Item sélectionné
+
+**`<owner>.selectedOne`**
 
 Retourne l’item sélectionné dans le listing, mais seulement s’il est unique.
 
-## Nouvelles méthodes propriétaire (instances)
+## Nouvelles méthodes d'instances
 
 Quand on lie un listing à un propriétaire, ce listing ajoute aussi de nouvelles méthodes (cf. la méthode d’instance `Listing#prepareOwner`)
 
-### `<item owner>.select()`
+
+
+### Sélection d’un item
+
+**`<item owner>.select()`**
 
 Permet de sélectionner l’instance du propriétaire `<item owner>` dans le listing.
 
 
 
-### `<item owner>.deselect()`
+### Désélection d’un item
+
+**`<item owner>.deselect()`**
 
 Désélectionne l’instance propriétaire dans le listing.
 
 
 
-## Nouvelles propriétés du propriétaire (instances)
+## Nouvelles propriétés d'instances
 
 
 
-### `<item owner>.listingItem`
+### Objet listing de l'item
+
+**`<item owner>.listingItem`**
 
 Retourne l’instance `Listing::ListingItem` de l’objet du listing associé à l’instance du propriétaire.
 
-### `<item owner>.listingItem.addClass('<class css>')`
-
-Pour ajouter une class CSS à un item de liste.
-
-### `<item owner>.listingItem.removeClass('<class css>')`
-
-Pour retirer une class CSS à un item de liste.
 
 
+#### Ajout d’un classe au listing-item
 
-## Méthodes propriétaire utiles
+**`<item owner>.listingItem.addClass('<class css>')`**
 
-### Méthode appelée quand on sélectionne un élément dans le listing
+Concrètement, ça ajoute une classe css à l’élément `LI` de l’item dans la liste.
+
+#### Retrait d’une class du listing-item
+
+**`<item owner>.listingItem.removeClass('<class css>')`**
+
+Concrètement, ça supprime la classe CSS de l’élément `LI` de l’item de la liste.
+
+
+
+## Méthodes de classe optionnelles
+
+> Note : la plupart de ces méthodes (toutes ?) sont appelées si elles existent, en tant que méthodes de classe, dans le propriétaire.
+
+
+
+### Après la construction du listing
+
+**`<Propriétaire>::afterBuild()`**
+
+On peut s’en servir par exemple pour surveiller certains champs particuliers.
+
+> Note : la méthode est appelée après que le listing a été placé dans le DOM.
+
+
+
+### À l’activation du listing
+
+C’est-à-dire quand on clique un de ses éléments (sans capturer définitivement l’évènement).
+
+`<propriétaire>::onActivate()`
+
+
+
+### À la sélection d'un élément dans le listing
 
 Par défaut, cette méthode est `Propriétaire#onSelect(item)`.
 
 Mais on peut définir une méthode propre dans l'[instanciation du listing][] avec la propriété `onSelect`.
 
-### Méthode propriétaire appelée quand on déselectionne un item
+
+
+### À la désélection d'un item
 
 Par défaut, cette méthode est `Propriétaire#onDeselect(item)`.
 
 Mais on peut définir une méthode propre dans l'[instanciation du listing][] avec la propriété `onDeselect`.
 
-### Appelée quand on désélectionne tout
+
+
+### Quand on désélectionne tout
 
 ~~~javascript
 <owner>.onDeselectAll(){
-  
+
 }
 ~~~
 
 
 
 
-### Méthode appelée quand on ajoute un élément dans le listing
+### À l'ajout d'un élément dans le listing
 
 Par défaut, cette méthode est `Propriétaire#onAdd(item)`.
 
 Mais on peut définir une méthode propre au cours de l'[instanciation du listing][] avec la propriété `onAdd`.
+
+
+
+---
+
+## Annexe
+
+### Historique des versions
+
+#### Version 1.2.1
+
+* Gestion du type « checkbox » 
+* Options pour affiner le formulaire.
+
+#### version 1.2.0
+
+* Gestion des listes d’item ordonnées (`orderedList`)
+
+##### version 1.1.0
+
+* Option pour ne pas afficher la bande de titre
+* Option pour ne pas rendre le listing draggable.
+* Option pour ne pas confirmer la suppression
+
+##### version 1.0.1
+
+* Réglage de la valeur par défaut quand on reset le formulaire.
+* Option `createOnPlus` qui permet de définir qu’il faut créer l’élément quand on clique sur le bouton « + ». Dans l’idée, c’est parce que souvent je fonctionne ainsi : je rentre les valeurs, puis je clique sur « + » pour créer l’élément alors que par défaut, le comportement est : 1) on clique sur « + » pour instancier un nouvel élément, 2) on définit ses valeurs, 3) on clique sur « Save » pour l’enregistrer.
+* Développement du présent manuel (meilleure définition des champs de formulaire propres).
+* Correction de la méthode de destruction qui ne fonctionnait qu’avec une base de données.
+
+
+
+
+
+
+
+
+
+
 
 
 [propriétaire du listing]: #ownerlisting

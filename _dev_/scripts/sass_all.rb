@@ -29,5 +29,11 @@ Dir.chdir(APP_FOLDER) do
   data_compilation = { line_comments: false, style: :compressed }
   Sass.compile_file( MAIN_SASS_PATH, MAIN_CSS_PATH, data_compilation)
 
+  # Les .sass qui peuvent se trouver dans le dossier ajax
+  Dir["./ajax/**/*.sass"].each do |sass|
+    css = File.join(File.dirname(sass), "#{File.basename(sass,File.extname(sass))}.css")
+    Sass.compile_file(sass, css, data_compilation)
+  end
+
   puts "Tous les SASS ont été transformés. Recharger la page du navigateur."
 end

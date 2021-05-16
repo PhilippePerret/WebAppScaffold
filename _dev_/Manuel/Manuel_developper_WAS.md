@@ -1,14 +1,10 @@
 # Scaffold WebApp<br>Manuel développeur
 
-
-
 ## Introduction
 
 Ce manuel décrit l’utilisation de « Scaffold WebApp » qui permet de construire très rapidement une application en `HTML/CSS/JAVASCRIPT/AJAX/RUBY`. En front-end, on utilise `HTML/CSS/JS` et en back-end on utilise `AJAX/RUBY`. Cela permet de faire rapidement une application avec toutes les ressources possibles et très facilement.
 
 Pour l’exemple, on peut voir `Publishing-html` qui a servi de base pour faire cet échafaudage.
-
-
 
 ## Construction de la page
 
@@ -16,17 +12,15 @@ Pour l’exemple, on peut voir `Publishing-html` qui a servi de base pour faire 
 
 Les « briques » sont des composants `html` qui se trouvent dans le dossier  `./html` et qui peuvent être insérés à la volée très simplement dans la page index. Il suffit pour ça d’utiliser la méthode promesse :
 
-~~~javascript
+```javascript
 UI.insert('<nom brique>', <container>)
 .then( () => {
   // ...
 })
 .catch(onError)
-~~~
+```
 
 > `<nom brique>` peut être fourni avec `.htm[l]` ou pas.
-
-
 
 ### Méthodes pratiques
 
@@ -34,37 +28,33 @@ UI.insert('<nom brique>', <container>)
 
 Pour créer un élément quelconque.
 
-~~~javascript
+```javascript
 DCreate('<tag>', {<attributs>})
-~~~
+```
 
 Par exemple :
 
-~~~javascript
+```javascript
 DCreate('DIV', {class:'mondiv', id:'iddiv', inner: DCreate('DIV')})
 DCreate('SPAN', {text:"Mon texte en dur"})
-~~~
-
-
+```
 
 #### DCreateDivLV
 
 Construction d’une ligne avec libellé et valeur formatée.
 
-~~~javascript
+```javascript
 DCreateDivLV("Mon libelle", "Ma valeur", {id:'maRangee', libelleSize:'120px'})
-~~~
+```
 
 Produit :
 
-~~~html
+```html
 <div id="maRangee">
   <span class="libelle" style="width:120px">Mon libellé</span>
   <span class="value">Ma valeur</span>
 </div>
-~~~
-
-
+```
 
 ## Aspect de l'interface
 
@@ -72,24 +62,20 @@ Tous les modules `CSS` se trouve dans le dossier général `./css`.  Dans ce dos
 
 Voici quelques classes à noter, souvent incontournables (pour une liste complète, le mieux est de voir dans les fichiers eux-mêmes).
 
-~~~bash
-.right					Pour aligner à droite
-.fright					Flottant à droite
-.fleft					Flottant à gauche
+```bash
+.right                    Pour aligner à droite
+.fright                    Flottant à droite
+.fleft                    Flottant à gauche
 
 .mt1
-.mt2						Pour laisser des marges au-dessus (de 1em ou 2em)
+.mt2                        Pour laisser des marges au-dessus (de 1em ou 2em)
 
-button.main			Pour un bouton principal
-~~~
-
-
+button.main            Pour un bouton principal
+```
 
 <a name="observedocument"></a>
 
 ## Méthodes d’observation du document
-
-
 
 ### `UI.listenClick(element, methode)`
 
@@ -105,22 +91,20 @@ La même chose que les méthodes précédentes, mais pour tous les autres types 
 
 Par exemple :
 
-~~~javascript
+```javascript
 const monMenu = DGet('#monMenu')
 UI.listen(monMenu, 'change', this.onChange.bind(this))
-~~~
+```
 
 ### `UI.unlisten(element, typeEvent, methode)`
 
 Pour ne plus écouter l'évènement précédent.
 
-
-
 ## Requêtes Ajax
 
 Une requête ajax fonctionne avec un script ruby.
 
-~~~javascript
+```javascript
 Ajax.send('mon-script.rb', {ma:donnee, autres:donnees})
 .then(ret => {
   if ( ret.error ) return erreur(ret.error)
@@ -128,7 +112,7 @@ Ajax.send('mon-script.rb', {ma:donnee, autres:donnees})
   //... sinon traitement ici ...
 })
 .catch(onError)
-~~~
+```
 
 > Noter que toutes les méthodes ci-dessous, `erreur`, `onErreur` sont implémentées dans le scaffold.
 
@@ -140,26 +124,23 @@ Dans le premier catch, on peut utiliser la méthode `onAjaxSuccess` qui permet d
 
 Par exemple :
 
-~~~javascript
+```javascript
 Ajax.send('mon-script-a-jouer.rb')
 .then(onAjaxSuccess)
 .catch(onError)
-~~~
+```
 
 > Le mieux est de le mettre en une seule ligne, mais ici on le dispatch pour la visibilité.
 
-
-
 **Le script `mon-script.rb`** doit se trouver dans le dossier :
 
-~~~bash
+```bash
 ./ajax/ajax/_scripts/
-~~~
+```
 
 Pour récupérer les données dans le script il suffit d’utiliser la méthode `Ajax.param(<key>)`. Par exemple, pour récupérer les données `ma` et `autres` envoyées ci-dessus :
 
-~~~ruby
-
+```ruby
 begin
   ma = Ajax.param(:ma)
   autres = Ajax.param(:autres)
@@ -175,11 +156,7 @@ rescue Exception => e
   Ajax.error(e)
 
 end
-~~~
-
-
-
-
+```
 
 ## Suivi du programme
 
@@ -191,25 +168,26 @@ Plus ce niveau est élevé plus les messages profonds sont affichés. Un suivi a
 
 En théorie, il n’y a pas de limite pour le niveau de débuggage.
 
-
-
 ## Messages
-
-
 
 ### Simple notification
 
-Pour un message simple, utiliser la méthode `message("<message> »)`.
+Pour un message simple, utiliser la méthode `message("<message>"[, {options}])`.
 
-> Un second argument est utilisé mais pas encore appliqué, qui permet d’envoyer des options.
+```javascript
+// Les options peuvent définir :
+options = {
+  // Note : ma première valeur est la valeur par défaut
+    cleanup:     false/true     // Nettoyer les messages précédents
+  keep:     true/false  // Garder les messages déjà affichés (inverse de cleanup)
+}
+```
 
 ### Messages d'erreur
 
 On peut utiliser la méthode `erreur(<message>)` pour écrire des messages à l’utilisateur.
 
 Si `<message>` est un objet qui répond à `message`, l’erreur est écrite en console et c’est seulement le message qui est donné à l’utilisateur.
-
-
 
 ## Méthodes pratiques
 

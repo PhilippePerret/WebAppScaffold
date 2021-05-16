@@ -17,7 +17,7 @@ class Ajax
           begin
             require_relative "./_scripts/#{param(:script)}"
           rescue Exception => e
-            raise e # pour le moment
+            raise e
           end
       else
         self << {error: "Le script '#{script_fullpath}' est introuvable…"}
@@ -39,11 +39,12 @@ class Ajax
       # }
       STDOUT.write data.to_json+"\n"
     rescue Exception => e
-      error = Hash.new
-      error.merge!(error: Hash.new)
-      error[:error].merge!(message: e.message)
-      error[:error].merge!(backtrace: e.backtrace)
-      STDOUT.write error.to_json
+      error(e)
+      err = Hash.new
+      err.merge!(error: Hash.new)
+      err[:error].merge!(message: e.message)
+      err[:error].merge!(backtrace: e.backtrace)
+      STDOUT.write err.to_json
     end
 
     # # Retourne l'argument de clé +key+
@@ -65,7 +66,7 @@ class Ajax
     # Pour mettre dans le rescue des scripts (cf. manuel)
     def error e
       log("ERREUR: #{e.message}")
-      log("BACTRACE ERREUR: #{e.backtrace.join(RC)}")
+      log("BACKTRACE ERREUR: #{e.backtrace.join(RC)}")
       self << {error: e.message, backtrace: e.backtrace}
     end
 

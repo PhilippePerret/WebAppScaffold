@@ -3,7 +3,7 @@
   Class Listing
   -------------
 
-  Version 1.0.0
+  Version 1.0.1
   -------------
 
 Cette classe permet de gérer des listes de chose intégralement, c'est-à-dire
@@ -34,6 +34,7 @@ class Listing {
     this.owner  = owner;
     this.data   = data ;
     this.setDefaultData()
+    this.options = this.data.options ;
     this.build();
     this.filtered = false
     this.prepareOwner()
@@ -41,6 +42,12 @@ class Listing {
 
   setDefaultData(){
     if ( undefined === this.data.container ) this.data.container = document.body
+    // Les options par défaut
+    if ( undefined === this.data.options ) this.data.options = {}
+    const opts = {sortable: true, draggable: true, title: true}
+    for(var opt in opts){
+      if ( undefined === this.data.options[opt] ) Object.assign(this.data.options, {[opt]: opts[opt]})
+    }
   }
 
   /**
@@ -87,7 +94,9 @@ class Listing {
     var form   = DCreate('FORM', {class:'listing-form'})
     this.form.build(form)
     this.barreCentrale = DCreate('DIV',{class:'listing-barre-centrale'})
-    div.appendChild(barreTitre)
+
+    if ( this.options.title ) div.appendChild(barreTitre)
+
     this.barreCentrale.appendChild(this.liste)
     this.barreCentrale.appendChild(form)
     div.appendChild(this.barreCentrale)
@@ -121,17 +130,28 @@ class Listing {
       })
     }
 
-    // On met l'élément dans le DOM
+    // === On met l'élément dans le DOM ===
     this.data.container.appendChild(div)
     this.observe()
     this.setDimentions()
 
     this.buttonsOnSelection = btnsOnSelection
     this.buttonsOnSelection.push(this.btnMoins, this.btnSave)
+
+    if ( 'function' == typeof this.owner.afterBuild) this.owner.afterBuild.call(this.owner)
   }
 
   observe(){
-    $(this.dieseId).draggable()
+
+    if ( this.options.draggable ) {
+      $(this.dieseId).draggable()
+    } else {
+      this.obj.style.position = 'relative'
+      this.obj.style.boxShadow = 'none'
+    }
+    this.options.sortable && $(this.liste).sortable({axis:'y'})
+
+
 
     // Les éléments clickable
     const listeClicks = [
@@ -152,17 +172,32 @@ class Listing {
 
   setDimentions(){
     if ( this.data.height ) {
-      this.barreCentrale.style.height = `${this.data.height}px`
-      this.form.obj.style.height = `${this.data.height - 28 - 4}px`
+      this.barreCentrale.style.height = px(this.data.height)
     }
-    if ( this.data.top ) { this.obj.style.top = `${this.data.top}px` }
-    if ( this.data.left) { this.obj.style.left = `${this.data.left}px` }
+
+    // Taille du formulaire
+    this.data.form_width  && (this.form.obj.style.width = px(this.data.form_width))
+
+    // Taille du listing
+    this.liste.style.width  = px(this.data.list_width || 240)
+    this.data.list_height && (this.liste.style.height = px(this.data.list_height))
+
+    if ( !this.options.form_under_listing ){
+      this.form.obj.style.marginLeft = px(this.data.list_width + 4)
+      this.data.form_height && (this.form.obj.style.height = px(this.data.form_height - 28 - 4))
+    } else {
+      this.form.obj.style.height = 'auto'
+    }
+
+    if ( this.data.top ) { this.obj.style.top = px(this.data.top) }
+    if ( this.data.left) { this.obj.style.left = px(this.data.left) }
   }
 
   activate(){
     if (this.constructor.current) this.constructor.current.desactivate()
     this.obj.style.zIndex = 500 ;
     this.constructor.current = this
+    this.owner.onActivate && this.owner.onActivate.call(this.owner)
   }
   desactivate(){
     this.obj.style.zIndex = 0
@@ -222,6 +257,13 @@ class Listing {
     this.selection.setTo(liste, options)
   }
 
+  // Pour sélectionner un élément (en fait, on simule un clic dessus)
+  select(litem){
+    if ('listingItem' in litem) litem = litem.listingItem
+    litem.obj.scrollIntoViewIfNeeded()
+    litem.onClick({shiftKey:false,metaKey:false,altKey:false})
+  }
+
   // Retourne l'instance de l'item sélectionné mais seulement s'il n'y
   // a que lui sélectionné
   // Sinon return UNDEFINED
@@ -235,34 +277,45 @@ class Listing {
   *** --------------------------------------------------------------------- */
 
   onPlusButton(ev){
-    this.form.cleanup()
-    this.toggleBtnSave(true)
-    message("Vous pouvez créer le nouvel élément.")
+    if ( this.data.createOnPlus ) {
+      // Quand on doit créer l'élément quand on clique sur "+"
+      this.onSaveButton(null)
+    } else {
+      // Procédure normale en trois temps : 1) "+" initialisation,
+      // 2) entrée des valeurs 3) "save" pour créer l'élément
+      this.form.cleanup()
+      this.toggleBtnSave(true)
+      message("Vous pouvez créer le nouvel élément.")
+    }
   }
 
-  onMoinsButton(ev){
-    if (confirm("Êtes-vous certain de vouloir supprimer cet élément ?")){
+  onMoinsButton(ev, force = false){
+    const is_confirmed = force || this.options.destroy_without_confirm || confirm("Êtes-vous certain de vouloir supprimer cet élément ?")
+    if ( is_confirmed ){
       const litem = this.selection.lastItem
       // console.log("litem:", litem)
       if ( 'function' == typeof this.owner.destroy ) {
         this.owner.destroy.call(this.owner, litem.item)
       } else {
-        if ( undefined === this.owner.tableName){
-          return erreur("ERREUR SYSTÉMIQUE : Il faut définir la propriété `tableName` du propriétaire du listing qui doit retourner le nom de la table (DB).")
-        }
-        Ajax.send('system/db-remove.rb', {table:this.owner.tableName, item_id:litem.item.id})
-        .then(ret => {
-          onAjaxSuccess(ret)
-          if(undefined!==this.owner.onDestroy)this.owner.onDestroy(litem.item)
+        if ( undefined != this.owner.tableName ) {
+          Ajax.send('system/db-remove.rb', {table:this.owner.tableName, item_id:litem.item.id})
+          .then(ret => {
+            onAjaxSuccess(ret)
+            if(undefined!==this.owner.onDestroy)this.owner.onDestroy(litem.item)
+            this.afterDestroy(litem)
+          }).catch(onError)
+        } else {
+          if(this.owner.onDestroy)this.owner.onDestroy(litem.item)
           this.afterDestroy(litem)
-        }).catch(onError)
+        }
       }
     }
   }
   afterDestroy(litem){
-    this.selection.remove(litem)
+    this.selection.remove(litem) // ne pas le faire avant
     litem.obj.remove()
     message("Élément supprimé avec succès.")
+    this.owner.afterDestroy && this.owner.afterDestroy.call(this.owner, litem.item)
   }
 
   onInitButton(ev){this.form.cleanup()}
@@ -319,15 +372,20 @@ class Listing {
     const itemValues = this.form.checkedValues()
     if ( itemValues ){
       if ( itemValues.id ) {
-        if ( 'function' === typeof (this.owner.update) ){
+        /* === ACTUALISATION === */
+        if ( 'update' in this.owner ){
           itemValues.id = Number(itemValues.id)
           this.owner.update.call(this.owner, itemValues)
         } else {
           console.error("Le propriétaire doit posséder la méthode 'update', qui reçoit les nouvelles valeurs, pour pouvoir fonctionner.")
         }
       } else {
+        /* === CRÉATION === */
         if ( 'function' === typeof (this.owner.create) ){
-          this.owner.create.call(this.owner, itemValues)
+          const newItem = this.owner.create.call(this.owner, itemValues)
+          this.add(newItem)
+          this.owner.__afterCreate && this.owner.__afterCreate(newItem)
+          this.owner.afterCreate && this.owner.afterCreate(newItem)
         } else {
           console.error("Le propriétaire doit posséder la méthode 'create', qui reçoit les nouvelles valeurs, pour pouvoir fonctionner.")
         }
@@ -363,9 +421,9 @@ class Listing {
   get btnAll(){return this._btnall||(this._btnall = this.obj.querySelector('.listing-btn-all'))}
 
   get obj(){return this._obj || (this._obj = DGet(this.dieseId))}
-  get id(){return this._id || (this._id = this.constructor.getNewId())}
+  get id(){return this._id || (this._id = this.data.id || this.constructor.getNewId())}
   get dieseId(){return this._did ||(this._did = `#${this.id}`)}
-}
+}// class Listing
 
 
 /** ---------------------------------------------------------------------
@@ -384,7 +442,13 @@ class ListingItem {
     this.listing.liste.appendChild(this.obj)
     this.observe()
   }
-
+  replaceInList(){
+    const newObj = this.item.li
+    this.unobserve()
+    this.obj.replaceWith(newObj)
+    this.obj = newObj
+    this.observe()
+  }
   addClass(css){
     this.obj.classList.add(css)
   }
@@ -400,14 +464,17 @@ class ListingItem {
   observe(){
     this.obj.addEventListener('click', this.onClick.bind(this))
   }
+  unobserve(){
+    this.obj.removeEventListener('click', this.onClick.bind(this))
+  }
 
   onClick(ev){
-    console.log({
-        'this.selected':this.selected
-      , 'this.listing.selection.hasSeveral':this.listing.selection.hasSeveral
-      , 'ev.shiftKey': ev.shiftKey
-      , 'ev.altKey': ev.altKey
-    })
+    // console.log({
+    //     'this.selected':this.selected
+    //   , 'this.listing.selection.hasSeveral':this.listing.selection.hasSeveral
+    //   , 'ev.shiftKey': ev.shiftKey
+    //   , 'ev.altKey': ev.altKey
+    // })
     if (ev.altKey) {
       // Quand on clique sur un élément par la touche ALT, c'est pour le
       // retirer de la liste filtrée. Si aucun filtre n'est encore appliqué,
@@ -574,24 +641,31 @@ class ListingForm {
   }
   feedField(item, field, dprop){
     const value = item.data[dprop.name]
-    field.value = value
+    if ( dprop.type == 'checkbox'){
+      field.checked = value
+    } else {
+      field.value = value
+    }
     if (dprop.setter){ this.listing.owner[dprop.setter].call(this.listing.owner,value)}
   }
 
   // Remplir le formulaire avec les valeurs de l'item +item+
   feed(item){
     this.obj.querySelector('.span-id').innerHTML = `#${item.id}`
+    this.obj.querySelector('#item-id').value = item.id
     this.forEachField(this.feedField.bind(this,item))
   }
 
   cleanup(){
     this.obj.querySelector('.span-id').innerHTML = '&nbsp;'
-    this.forEachField((field, propName) => {
+    this.obj.querySelector('#item-id').value = ''
+    this.forEachField((field, dprop) => {
       if ( field.isCheckbox ) field.checked = false
-      else { field.value = "" }
+      else { field.value = dprop.default || "" }
     })
     // Par défaut on décoche toutes les case à cocher
     this.obj.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = false)
+    this.listing.owner.afterInitForm && this.listing.owner.afterInitForm()
   }
 
   /**
@@ -602,15 +676,18 @@ class ListingForm {
       , onlyValues = {} // pour ne mettre que les propriétés et les valeurs
       , firstFocusSet = false // pour savoir si on a focussé dans le premier champ
       ;
-    const values = this.getValues()
+    this.getValues()
+    // console.log("this.properties:", this.properties)
     this.properties.forEach(dproperty => {
 
       // Débug
       // console.log("Check property #%s : %s", dproperty.name, dproperty.value)
 
       let error = null
-      const value = dproperty.value
-      if ( dproperty.vtype == 'number' ) {value = Number(value)}
+      var value = dproperty.value
+      switch(dproperty.vtype){
+        case 'number': value = Number(value); break
+      }
       if ( dproperty.required && value === null ) {
         error = `La propriété #${dproperty.name} est absolument requise.`
       }
@@ -629,24 +706,42 @@ class ListingForm {
         }
       }
 
-      const row = this.obj.querySelector(`div.row-${dproperty.name}`)
-      const div_message = row.querySelector(`.error-message`)
+      const row = this.obj.querySelector(`.row-${dproperty.name}`)
+      let div_message;
+      if (row){
+        div_message = row.querySelector(`.error-message`)
+      } else {
+        console.warn(`Pas de rangée .row-${dproperty.name}” dans le formulaire. Impossible de mettre en exergue l'erreur.`)
+      }
       if (error) {
         errors.push(error)
-        row.classList.add('field-error')
-        div_message.innerHTML = error
-        $(div_message).show()
+        if(row){
+          row.classList.add('field-error')
+          div_message.innerHTML = error
+          $(div_message).show()
+        }
         if (!firstFocusSet){
           firstFocusSet = true
           this.obj.querySelector(`#item-${dproperty.name}`).focus()
         }
       } else {
         // Tout est OK, on peut la prendre
-        row.classList.remove('field-error') // s'il y avait une erreur
-        $(div_message).hide()
+        if ( row ) {
+          row.classList.remove('field-error') // s'il y avait une erreur
+          $(div_message).hide()
+        }
         Object.assign(onlyValues, {[dproperty.name]: value})
       }
     })// fin de boucle sur toutes les propriétés
+
+    // On ajoute l'identifiant, qui ne sera utilisé que si c'est une
+    // édition
+    var itemId = this.obj.querySelector('#item-id').value
+    if (itemId == '') itemId = undefined
+    else itemId = Number(itemId)
+    Object.assign(onlyValues, {id: itemId})
+
+    // console.log("onlyValues = ", onlyValues)
 
     if ( errors.length ) { return null }
     else { return onlyValues }
@@ -675,11 +770,22 @@ class ListingForm {
   /**
     Construction du formulaire en fonction de la définition des
     propriétés du propriétaire du listing.
+
+
   **/
-  build(container){
-    container.appendChild(DCreate('DIV',{class:'right span-id', text:'&nbsp;'}))
+  /* ListingForm */build(container){
+    // Pour mettre l'identifiant en cas d'édition
+    var css = ['right', 'span-id']
+    if(this.listing.options.no_id) css.push('hidden')
+    container.appendChild(DCreate('DIV',{class:css.join(' '), text:'&nbsp;'}))
+    container.appendChild(DCreate('INPUT',{type:'hidden',id:'item-id',value:''}))
+
     this.properties.forEach(dproperty => {
-      var div   = DCreate('DIV',{class:`row row-${dproperty.name}`})
+      dproperty.options || (dproperty.options = {})
+      // console.log("dproperty = ", dproperty)
+      var tag  = 'DIV'
+      if ( dproperty.options.inline ) tag = 'SPAN'
+      var div   = DCreate(tag, {class:`row row-${dproperty.name}`})
       const fid = `item-${dproperty.name}`
       if ( dproperty.hname ) {
         div.appendChild(DCreate('LABEL', {text: dproperty.hname}))
@@ -689,9 +795,16 @@ class ListingForm {
           div.appendChild(DCreate('TEXTAREA',{id: fid})); break;
         case 'hidden':
           div.appendChild(DCreate('INPUT', {type:'hidden', id:fid})); break;
+        case 'checkbox':
+          div.appendChild(DCreate('SPAN', {inner:[
+              DCreate('INPUT', {type:'checkbox', id:fid})
+            , DCreate('LABEL', {for:fid, text:dproperty.label})
+          ]}))
+          break
         default:
           var inputData = {type:'text', id:fid}
           if (dproperty.placeholder) Object.assign(inputData,{placeholder: dproperty.placeholder})
+          if ( dproperty.options.field_width )Object.assign(inputData,{style:`width:${dproperty.options.field_width}`})
           div.appendChild(DCreate('INPUT', inputData))
       }
       // Si la propriété définit une méthode particulière de construction,
